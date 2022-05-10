@@ -240,6 +240,25 @@ void clampedExpSerial(float* values, int* exponents, float* output, int N) {
   }
 }
 
+void ptf(__cs149_vec_float a)
+{
+  for(int i=0;i<VECTOR_WIDTH;i++)
+  {
+    printf("%f ",a.value[i]);
+  }
+  printf("\n");
+}
+
+void pti(__cs149_vec_int a)
+{
+  for(int i=0;i<VECTOR_WIDTH;i++)
+  {
+    printf("%d ",a.value[i]);
+  }
+  printf("\n");
+}
+
+
 void clampedExpVector(float* values, int* exponents, float* output, int N) {
 
   //
@@ -249,7 +268,57 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
   // Your solution should work for any value of
   // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
   //
-  
+  int groupnum=N/VECTOR_WIDTH;
+  int lastgroupnum=N-N/VECTOR_WIDTH;
+  for(int i=0;i<=groupnum;i++)
+  {
+    __cs149_mask mk1=_cs149_init_ones(VECTOR_WIDTH);
+    __cs149_vec_float vfv,vfinit,vftemp,vf9;
+    _cs149_vload_float(vfv,values+i*VECTOR_WIDTH,mk1);
+    _cs149_vload_float(vfinit,values+i*VECTOR_WIDTH,mk1);
+    vf9=_cs149_vset_float(9.999999f);
+
+    __cs149_vec_int vitemp,vie,vione;
+    _cs149_vload_int(vie,exponents+i*VECTOR_WIDTH,mk1);
+    __cs149_vec_int vizero=_cs149_vset_int(0);
+    vione=_cs149_vset_int(1);
+    __cs149_mask mkzero,mknotzero,mkg9;
+    _cs149_veq_int(mkzero,vizero,vie,mk1);
+    _cs149_vset_float(vfv,1.0f,mkzero);
+
+    mknotzero=_cs149_mask_not(mkzero);
+    _cs149_vsub_int(vitemp,vie,vione,mknotzero);
+    _cs149_vmove_int(vie,vitemp,mknotzero);
+    _cs149_vgt_int(mknotzero,vie,vizero,mk1);
+    
+
+    while(_cs149_cntbits(mknotzero))
+    {
+      _cs149_vmove_float(vftemp,vfv,mk1);
+      _cs149_vmult_float(vftemp,vfv,vfinit,mknotzero);
+      _cs149_vmove_float(vfv,vftemp,mk1);
+
+      _cs149_vsub_int(vitemp,vie,vione,mknotzero);
+      _cs149_vmove_int(vie,vitemp,mknotzero);
+      _cs149_vgt_int(mknotzero,vie,vizero,mk1);
+
+    }
+    _cs149_vgt_float(mkg9,vfv,vf9,mk1);
+    _cs149_vset_float(vfv,9.999999f,mkg9);
+
+    if(i==groupnum)
+    {
+
+      mknotzero=_cs149_init_ones(N%VECTOR_WIDTH);
+      
+      mkzero=_cs149_mask_not(mknotzero);
+      _cs149_vset_float(vfv,0.0f,mkzero);
+    }
+
+
+    _cs149_vstore_float(output+i*VECTOR_WIDTH,vfv,mk1);
+  }
+
 }
 
 // returns the sum of all elements in values
@@ -270,11 +339,36 @@ float arraySumVector(float* values, int N) {
   //
   // CS149 STUDENTS TODO: Implement your vectorized version of arraySumSerial here
   //
+  float sum=0;
+  float temp[VECTOR_WIDTH];
+  __cs149_mask mkfirst,mklast,mkf,mk1=_cs149_init_ones(VECTOR_WIDTH);
+  mkf=_cs149_init_ones(VECTOR_WIDTH-1);
+  mklast=_cs149_mask_not(mkf);
+  mkfirst=_cs149_init_ones(1);
+
   
   for (int i=0; i<N; i+=VECTOR_WIDTH) {
-
+    __cs149_vec_float vf1,vf2;
+    _cs149_vload_float(vf1,values+i,mk1);
+    
+    if(VECTOR_WIDTH%2)
+    {
+      _cs149_vstore_float(temp,vf1,mklast);
+      sum+=temp[VECTOR_WIDTH-1];
+    }
+    
+    int j=VECTOR_WIDTH;
+    while(j!=1)
+    {
+      _cs149_hadd_float(vf2,vf1);
+      _cs149_interleave_float(vf1,vf2);
+      j/=2;
+    }
+    
+    _cs149_vstore_float(temp,vf1,mkfirst);
+    sum+=*temp;
   }
 
-  return 0.0;
+  return sum;
 }
 
