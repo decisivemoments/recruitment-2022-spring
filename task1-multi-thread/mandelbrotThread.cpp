@@ -44,149 +44,15 @@ void workerThreadStart(WorkerArgs * const args) {
     //     args->maxIterations,
     //     args->output
     // );
-    if(args->x0 == -2)
+    for(int i=args->threadId;i<args->height;i+=args->numThreads)
     {
-        if(args->threadId==0)
-        {
-            mandelbrotSerial(
-                args->x0,args->y0,args->x1,args->y1,
-                args->width,args->height,
-                0,330,
-                args->maxIterations,
-                args->output
-            );
-        }
-        else if(args->threadId==7)
-        {
-                mandelbrotSerial(
-                args->x0,args->y0,args->x1,args->y1,
-                args->width,args->height,
-                870,330,
-                args->maxIterations,
-                args->output
-                );
-        }
-        else if(args->threadId==1)
-        {
-                mandelbrotSerial(
-                args->x0,args->y0,args->x1,args->y1,
-                args->width,args->height,
-                330,110,
-                args->maxIterations,
-                args->output
-                );
-        }
-        else if(args->threadId==6)
-        {
-                mandelbrotSerial(
-                args->x0,args->y0,args->x1,args->y1,
-                args->width,args->height,
-                760,110,
-                args->maxIterations,
-                args->output
-                );
-        }
-        else if(args->threadId==2)
-        {
-                mandelbrotSerial(
-                args->x0,args->y0,args->x1,args->y1,
-                args->width,args->height,
-                440,90,
-                args->maxIterations,
-                args->output
-                );
-        }
-        else if(args->threadId==5)
-        {
-                mandelbrotSerial(
-                args->x0,args->y0,args->x1,args->y1,
-                args->width,args->height,
-                670,90,
-                args->maxIterations,
-                args->output
-                );
-        }
-        else if(args->threadId==3)
-        {
-                mandelbrotSerial(
-                args->x0,args->y0,args->x1,args->y1,
-                args->width,args->height,
-                530,70,
-                args->maxIterations,
-                args->output
-                );
-        }
-        else if(args->threadId==4)
-        {
-                mandelbrotSerial(
-                args->x0,args->y0,args->x1,args->y1,
-                args->width,args->height,
-                600,70,
-                args->maxIterations,
-                args->output
-                );
-        }
-    }
-    else
-    {
-        switch (args->threadId)
-        {
-        case 0:
-            mandelbrotSerial(
-            args->x0,args->y0,args->x1,args->y1,
-            args->width,args->height,
-            0,80,
-            args->maxIterations,
-            args->output
-            );
-            break;
-        case 1:
-            mandelbrotSerial(
-            args->x0,args->y0,args->x1,args->y1,
-            args->width,args->height,
-            80,110,
-            args->maxIterations,
-            args->output
-            );
-            break;
-        case 2:
-            mandelbrotSerial(
-            args->x0,args->y0,args->x1,args->y1,
-            args->width,args->height,
-            190,170,
-            args->maxIterations,
-            args->output
-            );
-            break;
-        case 3:
-            mandelbrotSerial(
-            args->x0,args->y0,args->x1,args->y1,
-            args->width,args->height,
-            360,200,
-            args->maxIterations,
-            args->output
-            );
-            break;
-        case 4:
-            mandelbrotSerial(
-            args->x0,args->y0,args->x1,args->y1,
-            args->width,args->height,
-            560,190,
-            args->maxIterations,
-            args->output
-            );
-            break;
-        default:
-            mandelbrotSerial(
-            args->x0,args->y0,args->x1,args->y1,
-            args->width,args->height,
-            args->threadId*args->height/args->numThreads,150,
-            args->maxIterations,
-            args->output
-            );
-            break;
-        }
-
+        mandelbrotSerial(
+        args->x0,args->y0,args->x1,args->y1,
+        args->width,args->height,
+        i,1,
+        args->maxIterations,
+        args->output
+        );
     }
     double endTime = CycleTimer::currentSeconds();
     //printf("thread:%d time:%lf\n",args->threadId,(endTime-startTime)*1000);

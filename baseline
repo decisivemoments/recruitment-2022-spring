@@ -1,0 +1,364 @@
+Running, dataset: size 256
+time spent: 101861us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 838538us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 8.92136e+06us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 8.56297e+07us
+Passed, dataset: size 2048
+
+单加 修改局部变量：
+    int size2=size*size;
+    //#pragma omp parallel for
+    for(int i = 0; i < size2; i+=size)
+    {
+        for(int j = 0; j < size; j++)
+        {
+            for(int k = 0,sk = 0; k < size; k++,sk+=size)
+            {
+                c[i+j] += a[i+k] * b[sk+j];
+            }
+        }    
+    }
+    
+./gemm
+Running, dataset: size 256
+time spent: 95836us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 838024us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 8.20958e+06us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 8.53044e+07us
+Passed, dataset: size 2048
+对于前三个有用，第四个用处不大，说明瓶颈不在这里。
+
+
+单纯变为多线程：
+
+    #pragma omp parallel for
+    for(int i = 0; i < size; i++)
+    {
+        for(int j = 0; j < size; j++)
+        {
+            for(int k = 0; k < size; k++)
+            {
+                c[i*size+j] += a[i*size+k] * b[k*size+j];
+            }
+        }    
+    }
+
+
+./gemm
+Running, dataset: size 256
+time spent: 20271us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 168099us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 1.70154e+06us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 1.61076e+07us
+Passed, dataset: size 2048
+
+多线程+存储局部变量
+    int size2=size*size;
+    #pragma omp parallel for
+    for(int i = 0; i < size2; i+=size)
+    {
+        for(int j = 0; j < size; j++)
+        {
+            for(int k = 0,sk = 0; k < size; k++,sk+=size)
+            {
+                c[i+j] += a[i+k] * b[sk+j];
+            }
+        }    
+    }
+    
+./gemm
+Running, dataset: size 256
+time spent: 19063us
+time spent: 20983us
+time spent: 25035us
+time spent: 22873us
+time spent: 19605us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 161829us
+time spent: 156158us
+time spent: 165578us
+time spent: 158361us
+time spent: 174015us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 1.50989e+06us
+time spent: 1.50854e+06us
+time spent: 1.46939e+06us
+time spent: 1.68928e+06us
+time spent: 1.61259e+06us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 1.30325e+07us
+time spent: 1.32736e+07us
+time spent: 1.42033e+07us
+time spent: 1.83496e+07us
+time spent: 1.42198e+07us
+Passed, dataset: size 2048
+
+这次一下测3次。全部核心都用上CPU温度吃不消，中途会自动降低线程使用率降温。
+
+换成动态分配，还不如静态呢
+    int size2=size*size;
+    #pragma omp parallel for schedule(dynamic)
+    for(int i = 0; i < size2; i+=size)
+    {
+        for(int j = 0; j < size; j++)
+        {
+            for(int k = 0,sk = 0; k < size; k++,sk+=size)
+            {
+                c[i+j] += a[i+k] * b[sk+j];
+            }
+        }    
+    }
+    
+./gemm
+Running, dataset: size 256
+time spent: 19936us
+time spent: 20531us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 158541us
+time spent: 164534us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 1.44902e+06us
+time spent: 1.49022e+06us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 1.53363e+07us
+time spent: 1.48319e+07us
+Passed, dataset: size 2048
+
+
+把所有vector换成int 数组
+./gemm
+Running, dataset: size 256
+time spent: 7907us
+time spent: 8650us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 74607us
+time spent: 76005us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 681840us
+time spent: 686721us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 8.94417e+06us
+time spent: 9.57404e+06us
+Passed, dataset: size 2048
+跑进10e6的数量级了
+现在终于不用测试一次都要等几十上百秒钟了
+
+
+先加上向量操作：
+    int size2=size*size;
+    //#pragma omp parallel for 
+    for(int i = 0; i < size2; i+=size)
+    {
+        for(int j = 0; j < size; j+=4)
+        {
+            __m128i c0=_mm_stream_load_si128((__m128i*)(c+i+j));
+            for(int k = 0,sk = 0; k < size; k++,sk+=size)
+            {
+                __m128i a0=_mm_set1_epi32(*(a+i+k));
+                __m128i b0=_mm_stream_load_si128((__m128i*)(b+j+sk));
+                c0=_mm_add_epi32(c0,
+                    _mm_mullo_epi32(a0,b0)
+                );
+            }
+            _mm_store_si128((__m128i*)(c+i+j),c0);
+        }    
+    }
+
+./gemm
+Running, dataset: size 256
+here
+time spent: 24078us
+time spent: 24691us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+here
+time spent: 203963us
+time spent: 203562us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+here
+time spent: 1.79338e+06us
+time spent: 1.84539e+06us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+here
+time spent: 2.68867e+07us
+time spent: 2.15387e+07us
+Passed, dataset: size 2048
+
+效率还不错
+
+多线程+向量
+    int size2=size*size;
+    #pragma omp parallel for 
+    for(int i = 0; i < size2; i+=size)
+    {
+        for(int j = 0; j < size; j+=4)
+        {
+            __m128i c0=_mm_stream_load_si128((__m128i*)(c+i+j));
+            for(int k = 0,sk = 0; k < size; k++,sk+=size)
+            {
+                __m128i a0=_mm_set1_epi32(*(a+i+k));
+                __m128i b0=_mm_stream_load_si128((__m128i*)(b+j+sk));
+                c0=_mm_add_epi32(c0,
+                    _mm_mullo_epi32(a0,b0)
+                );
+            }
+            _mm_store_si128((__m128i*)(c+i+j),c0);
+        }    
+    }
+
+./gemm
+Running, dataset: size 256
+time spent: 3627us
+time spent: 7653us
+time spent: 7388us
+time spent: 3274us
+time spent: 4562us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 34629us
+time spent: 36862us
+time spent: 32966us
+time spent: 36062us
+time spent: 34925us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 317029us
+time spent: 323003us
+time spent: 309579us
+time spent: 309142us
+time spent: 329026us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 3.25101e+06us
+time spent: 3.68078e+06us
+time spent: 3.01351e+06us
+time spent: 3.11798e+06us
+time spent: 3.14029e+06us
+Passed, dataset: size 2048
+
+二十多倍了
+
+几个东西堆起来
+./gemm
+Running, dataset: size 256
+time spent: 7189us
+time spent: 11964us
+time spent: 6873us
+time spent: 6187us
+time spent: 7589us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 32018us
+time spent: 35394us
+time spent: 30501us
+time spent: 30963us
+time spent: 34152us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 278257us
+time spent: 259571us
+time spent: 263758us
+time spent: 253764us
+time spent: 264359us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 2.13231e+06us
+time spent: 2.12643e+06us
+time spent: 2.14345e+06us
+time spent: 2.22604e+06us
+time spent: 2.43865e+06us
+Passed, dataset: size 2048
+
+
+最后再整一个循环展开，展开个四次康康
+
+
+./gemm
+Running, dataset: size 256
+time spent: 5856us
+time spent: 5882us
+time spent: 5969us
+time spent: 4596us
+time spent: 6196us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 22777us
+time spent: 29788us
+time spent: 26068us
+time spent: 23968us
+time spent: 26827us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 176020us
+time spent: 183459us
+time spent: 182175us
+time spent: 182482us
+time spent: 193425us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 1.50017e+06us
+time spent: 1.51314e+06us
+time spent: 1.50663e+06us
+time spent: 1.53743e+06us
+time spent: 1.50185e+06us
+Passed, dataset: size 2048
+对数量级没啥影响了 也就是能变快10～100倍之间吧。
