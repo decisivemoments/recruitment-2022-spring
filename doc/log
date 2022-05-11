@@ -126,7 +126,7 @@ time spent: 1.83496e+07us
 time spent: 1.42198e+07us
 Passed, dataset: size 2048
 
-这次一下测3次。全部核心都用上CPU温度吃不消，中途会自动降低线程使用率降温。
+这次一下测5次。全部核心都用上CPU温度吃不消，中途会自动降低线程使用率降温。
 
 换成动态分配，还不如静态呢
     int size2=size*size;
@@ -291,7 +291,7 @@ Passed, dataset: size 2048
 
 二十多倍了
 
-几个东西堆起来
+几个东西堆起来，加上Cache BLocking
 ./gemm
 Running, dataset: size 256
 time spent: 7189us
