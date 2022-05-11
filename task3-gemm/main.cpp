@@ -78,28 +78,28 @@ void f1(const int size,int ta,int tb,int tc)
 
 void Gemm(const int &size) {
     //#pragma omp parallel for
-    // for(int i = 0; i < size; i++)
-    // {
-    //     for(int j = 0; j < size; j++)
-    //     {
-    //         for(int k = 0; k < size; k++)
-    //         {
-    //             c[i*size+j] += a[i*size+k] * b[k*size+j];
-    //         }
-    //     }    
-    // }
-    int size2=size*size;
-    #pragma omp parallel for 
-    for(int i = 0; i <size2; i+=size*blocksize)
+    for(int i = 0; i < size; i++)
     {
-        for(int j = 0; j < size; j+=blocksize)
+        for(int j = 0; j < size; j++)
         {
-            for(int k = 0; k < size; k+=blocksize)
+            for(int k = 0; k < size; k++)
             {
-                f1(size,i,j,k);
+                c[i*size+j] += a[i*size+k] * b[k*size+j];
             }
         }    
     }
+    // int size2=size*size;
+    // #pragma omp parallel for 
+    // for(int i = 0; i <size2; i+=size*blocksize)
+    // {
+    //     for(int j = 0; j < size; j+=blocksize)
+    //     {
+    //         for(int k = 0; k < size; k+=blocksize)
+    //         {
+    //             f1(size,i,j,k);
+    //         }
+    //     }    
+    // }
         
 }
 
@@ -135,7 +135,7 @@ void Benchmark(const int &size) {
         file_b >> b[i];
     }
 
-    for(int i=0;i<5;i++)
+    for(int i=0;i<1;i++)
     {
         memset(c,0,sizeof(c));
         PRINT_TIME(
