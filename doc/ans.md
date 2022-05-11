@@ -20,7 +20,8 @@ task2应该就是用来熟悉向量操作的。一个是把指数计算向量化
 
 # task3
 task3doc文件夹里面也包含了一个log，记录当时整个过程。
-主要看三个文档，循环展开和局部变量那个来自CSAPP，然后看了一些介绍intel 向量指令集的文档（搜索的，乱七八糟的看了点，没怎么记下来）
+
+主要看提供的三个文档，循环展开和局部变量那个来自CSAPP（CSAPP去年看得，时间有点久了，不过循环展开和尽量使用局部变量还是记忆很深刻的），然后看了一些介绍intel 向量指令集的文档（在搜索引擎搜索的了一些相关的，主要是介绍intel向量指令是啥呀，然后大概分为哪几类函数。不过一般都是什么SSE哪几年出来的之类的东西。最主要还是官方文档靠谱呀，还是得在上面找到底需要什么函数。）
 
 1. 尽量使用局部变量
    
@@ -120,3 +121,69 @@ time spent: 1.50663e+06us
 time spent: 1.53743e+06us
 time spent: 1.50185e+06us
 Passed, dataset: size 2048
+
+## ps
+
+还好晚上又闲的没事又跑一遍，之前copy了一个task3的文件夹在里面写代码的，然后后面只粘贴了代码到task3，另一个文件夹删掉了。今晚一跑居然原task3文件夹里面数据都还没下载，还好又看了一眼。糗大了。
+
+又跑了一遍，算个准确的加速比吧
+
+./gemm
+
+Running, dataset: size 256
+time spent: 57942us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 478401us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 4.81222e+06us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 1.06844e+08us
+Passed, dataset: size 2048
+
+./gemm
+
+Running, dataset: size 256
+time spent: 5741us
+time spent: 5780us
+time spent: 5333us
+time spent: 7672us
+time spent: 8068us
+Passed, dataset: size 256
+
+Running, dataset: size 512
+time spent: 24954us
+time spent: 25883us
+time spent: 24738us
+time spent: 24971us
+time spent: 25164us
+Passed, dataset: size 512
+
+Running, dataset: size 1024
+time spent: 196962us
+time spent: 196731us
+time spent: 192210us
+time spent: 202893us
+time spent: 196623us
+Passed, dataset: size 1024
+
+Running, dataset: size 2048
+time spent: 1.63789e+06us
+time spent: 1.61423e+06us
+time spent: 1.63534e+06us
+time spent: 1.6136e+06us
+time spent: 1.6261e+06us
+Passed, dataset: size 2048
+
+256：10X
+
+512：19X
+
+1024：24X
+
+2048：66.18X
